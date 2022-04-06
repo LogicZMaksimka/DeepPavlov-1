@@ -1,8 +1,8 @@
 {
   "dataset_reader": {
     "class_name": "sq_reader",
-    "valid_size": 5000,
-    "data_path": "{DOWNLOADS_PATH}/wizard_of_wikipedia/wizard_of_wikipedia.json"
+    "valid_size": 500,
+    "data_path": "{DOWNLOADS_PATH}/coqa/coqa.json"
   },
   "dataset_iterator": {
     "class_name": "data_learning_iterator",
@@ -32,7 +32,7 @@
           "eps": 1e-06
         },
         "learning_rate_drop_patience": 2,
-        "learning_rate_drop_div": 3.0,
+        "learning_rate_drop_div": 2.0,
         "in": ["input_ids", "attention_mask"],
         "in_y": ["target_ids"],
         "out": ["answer", "ppl"]
@@ -47,7 +47,7 @@
     ],
     "log_every_n_batches": 50,
     "val_every_n_batches": 500,
-    "batch_size": 15,
+    "batch_size": 10,
     "pytest_max_batches": 2,
     "pytest_batch_size": 5,
     "validation_patience": 10,
@@ -70,13 +70,7 @@
       "ROOT_PATH": "~/.deeppavlov",
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
-      "MODEL_PATH": "{MODELS_PATH}/generative_qa/first_train/wizard-{TRANSFORMER}"
-    },
-    "download": [
-      {
-        "url": "http://files.deeppavlov.ai/datasets/wizard_of_wikipedia.json",
-        "subdir": "{DOWNLOADS_PATH}/wizard_of_wikipedia"
-      }
-    ]
+      "MODEL_PATH": "{MODELS_PATH}/generative_qa/coqa-{TRANSFORMER}"
+    }
   }
 }

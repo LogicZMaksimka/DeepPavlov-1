@@ -126,6 +126,7 @@ class TorchGenerativeQA(TorchModel):
                                   labels=target_ids_batch).loss
                 ppl = torch.exp(loss)
                 ppl = [ppl.detach().cpu().numpy().tolist()]
+        
         answers_batch = []
         for answer_ids in answer_ids_batch:
             answer = self.tokenizer.decode(answer_ids)
@@ -198,3 +199,4 @@ class TorchGenerativeQA(TorchModel):
                 self.epochs_done = checkpoint.get("epochs_done", 0)
             else:
                 logger.info(f"Init from scratch. Load path {weights_path} does not exist.")
+
