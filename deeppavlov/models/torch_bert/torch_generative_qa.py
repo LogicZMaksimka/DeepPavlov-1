@@ -131,8 +131,11 @@ class TorchGenerativeQA(TorchModel):
         for answer_ids in answer_ids_batch:
             answer = self.tokenizer.decode(answer_ids)
             answers_batch.append(answer)
-
-        return answers_batch, ppl
+        
+        if target_ids_batch is None:
+            return answers_batch
+        else:
+            return answers_batch, ppl
 
     @overrides
     def load(self, fname=None):
