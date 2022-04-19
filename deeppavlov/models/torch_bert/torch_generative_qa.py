@@ -129,7 +129,7 @@ class TorchGenerativeQA(TorchModel):
         
         answers_batch = []
         for answer_ids in answer_ids_batch:
-            answer = self.tokenizer.decode(answer_ids)
+            answer = self.tokenizer.decode(answer_ids, skip_special_tokens=True)
             answers_batch.append(answer)
         
         if target_ids_batch is None:

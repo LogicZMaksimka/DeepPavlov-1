@@ -1,23 +1,13 @@
 {
-  "dataset_reader": {
-    "class_name": "sq_reader",
-    "valid_size": 5000,
-    "data_path": "{DOWNLOADS_PATH}/wizard_of_wikipedia/wizard_of_wikipedia.json"
-  },
-  "dataset_iterator": {
-    "class_name": "data_learning_iterator",
-    "shuffle": true
-  },
   "chainer": {
     "in": ["question", "contexts"],
-    "in_y": ["target"],
     "pipe": [
       {
         "class_name": "torch_transformers_generative_qa_preprocessor",
         "vocab_file": "{TRANSFORMER}",
         "max_seq_length": 512,
-        "in": ["question", "contexts", "target"],
-        "out": ["input_ids", "attention_mask", "target_ids"]
+        "in": ["question", "contexts"],
+        "out": ["input_ids", "attention_mask"]
       },
       {
         "class_name": "torch_generative_qa",
@@ -32,10 +22,9 @@
           "eps": 1e-06
         },
         "learning_rate_drop_patience": 2,
-        "learning_rate_drop_div": 3.0,
+        "learning_rate_drop_div": 2.0,
         "in": ["input_ids", "attention_mask"],
-        "in_y": ["target_ids"],
-        "out": ["answer", "ppl"]
+        "out": ["answer"]
       }
     ],
     "out": ["answer"]
@@ -57,7 +46,7 @@
         "inputs": ["ppl"]
       },
       {
-        "name": "sacred_bleu",
+        "name": "sacrebleu",
         "inputs": ["target", "answer"]
       }
     ],
@@ -70,13 +59,7 @@
       "ROOT_PATH": "~/.deeppavlov",
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
-      "MODEL_PATH": "{MODELS_PATH}/generative_qa/first_train/wizard-{TRANSFORMER}"
-    },
-    "download": [
-      {
-        "url": "http://files.deeppavlov.ai/datasets/wizard_of_wikipedia.json",
-        "subdir": "{DOWNLOADS_PATH}/wizard_of_wikipedia"
-      }
-    ]
+      "MODEL_PATH": "{MODELS_PATH}/generative_qa/first_train/{TRANSFORMER}"
+    }
   }
 }
