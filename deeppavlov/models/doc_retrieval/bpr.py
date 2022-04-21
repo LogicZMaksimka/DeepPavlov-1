@@ -3,10 +3,11 @@ import numpy as np
 import torch
 from tqdm import trange
 from transformers import AutoTokenizer
-from bpr import BiEncoder, FaissBinaryIndex, FaissIndex, Retriever
+from bpr import FaissBinaryIndex, FaissIndex, Retriever
 from deeppavlov.core.common.registry import register
 from deeppavlov.core.models.component import Component
 from deeppavlov.core.models.serializable import Serializable
+from deeppavlov.models.doc_retrieval.biencoder import BiEncoder
 
 
 class Retriever(object):
@@ -39,17 +40,21 @@ class Retriever(object):
 
 @register('bpr')
 class BPR(Component, Serializable):
-    def __init__(self, load_path, bpr_checkpoint, bpr_index, top_n=100, *args, **kwargs):
+    def __init__(self, pretrained_model, load_path, bpr_checkpoint, bpr_index, top_n=100, *args, **kwargs):
         super().__init__(save_path=None, load_path=load_path)
         self.bpr_checkpoint = bpr_checkpoint
         self.bpr_index = bpr_index
         self.top_n = top_n
+        self.hparams = {"base_pretrained_model": pretrained_model, "load_path": f"{self.load_path}/query_encoder_en.pth.tar",
+                        "max_query_length": 256}
         self.load()
         self.index = FaissBinaryIndex(self.base_index)
         self.retriever = Retriever(self.index, self.biencoder)
     
     def load(self):
-        self.biencoder = BiEncoder.load_from_checkpoint(str(self.load_path / self.bpr_checkpoint))
+        #self.biencoder = BiEncoder.load_from_checkpoint(str(self.load_path / self.bpr_checkpoint))
+        #torch.save({"model_state_dict": self.biencoder.query_encoder.cpu().state_dict()}, "/archive/evseev/.deeppavlov/models/bpr/eng/model.pth.tar")
+        self.biencoder = BiEncoder(self.hparams)
         self.biencoder.eval()
         self.biencoder.freeze()
         self.base_index = faiss.read_index_binary(str(self.load_path / self.bpr_index))
@@ -59,6 +64,7 @@ class BPR(Component, Serializable):
 
     def __call__(self, queries):
         queries = list(queries)
+        queries = [query.lower() for query in queries]
         query_embeddings = self.retriever.encode_queries(queries)
         scores, ids = self.retriever.search(query_embeddings, k=self.top_n)
         return ids.tolist()

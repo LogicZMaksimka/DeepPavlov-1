@@ -8,6 +8,7 @@
         "load_path": "{MODEL_PATH}",
         "bpr_checkpoint": "bpr_finetuned_nq_adv.ckpt",
         "bpr_index": "bpr_finetuned_nq_adv.idx",
+        "pretrained_model": "bert-base-uncased",
         "top_n": 10,
         "in": ["questions"],
         "out": ["par_ids"]
@@ -31,12 +32,16 @@
     },
     "download": [
       {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/bpr_eng.tar.gz",
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/eng/bpr_eng.tar.gz",
         "subdir": "{MODEL_PATH}"
       },
       {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/bpr_db_eng_l100.tar.gz",
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/eng/bpr_db_eng_l100.tar.gz",
         "subdir": "{DOWNLOADS_PATH}/bpr/eng"
+      },
+      {
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/eng/query_encoder_en.tar.gz",
+        "subdir": "{MODEL_PATH}"
       }
     ]
   }
