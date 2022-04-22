@@ -32,15 +32,15 @@
     },
     "download": [
       {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/eng/bpr_eng.tar.gz",
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/bpr_eng.tar.gz",
         "subdir": "{MODEL_PATH}"
       },
       {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/eng/bpr_db_eng_l100.tar.gz",
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/bpr_db_eng_l100.tar.gz",
         "subdir": "{DOWNLOADS_PATH}/bpr/eng"
       },
       {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/eng/query_encoder_en.tar.gz",
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/bpr/query_encoder_en.tar.gz",
         "subdir": "{MODEL_PATH}"
       }
     ]
