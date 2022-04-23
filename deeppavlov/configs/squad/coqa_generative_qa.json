@@ -14,7 +14,7 @@
       {
         "class_name": "torch_transformers_generative_qa_preprocessor",
         "vocab_file": "{TRANSFORMER}",
-        "max_seq_length": 200,
+        "max_seq_length": 512,
         "in": ["question", "contexts", "target"],
         "out": ["input_ids", "attention_mask", "target_ids"]
       },

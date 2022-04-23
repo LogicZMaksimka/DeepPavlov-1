@@ -1,13 +1,27 @@
 {
+  "dataset_reader": {
+    "class_name": "sq_reader",
+    "valid_size": 1000,
+    "data_path": "{DOWNLOADS_PATH}/coqa/coqa_max_tok_{MAX_TOKENS}.json"
+  },
+  "dataset_iterator": {
+    "class_name": "data_learning_iterator"
+  },
   "chainer": {
-    "in": ["question", "contexts"],
+    "in": ["question", "ignored"],
+    "in_y": ["target"],
     "pipe": [
+      {
+        "config_path": "{CONFIGS_PATH}/doc_retrieval/bpr_en.json",
+        "in": ["question"],
+        "out": ["contexts"]
+      },
       {
         "class_name": "torch_transformers_generative_qa_preprocessor",
         "vocab_file": "{TRANSFORMER}",
         "max_seq_length": 512,
-        "in": ["question", "contexts"],
-        "out": ["input_ids", "attention_mask"]
+        "in": ["question", "contexts", "target"],
+        "out": ["input_ids", "attention_mask", "target_ids"]
       },
       {
         "class_name": "torch_generative_qa",
@@ -16,15 +30,16 @@
         "load_path": "{MODEL_PATH}/model",
         "optimizer": "AdamW",
         "optimizer_parameters": {
-          "lr": 1e-04,
+          "lr": 3e-04,
           "weight_decay": 0.01,
           "betas": [0.9, 0.999],
           "eps": 1e-06
         },
-        "learning_rate_drop_patience": 2,
-        "learning_rate_drop_div": 2.0,
+        "learning_rate_drop_patience": 20,
+        "learning_rate_drop_div": 1.5,
         "in": ["input_ids", "attention_mask"],
-        "out": ["answer"]
+        "in_y": ["target_ids"],
+        "out": ["answer", "ppl"]
       }
     ],
     "out": ["answer"]
@@ -39,7 +54,7 @@
     "batch_size": 30,
     "pytest_max_batches": 2,
     "pytest_batch_size": 5,
-    "validation_patience": 10,
+    "validation_patience": 100,
     "metrics": [
       {
         "name": "ppl",
@@ -60,7 +75,8 @@
       "ROOT_PATH": "~/.deeppavlov",
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
-      "MODEL_PATH": "{MODELS_PATH}/generative_qa/first_train/coqa-{TRANSFORMER}-max-tok-{MAX_TOKENS}"
+      "MODEL_PATH": "{MODELS_PATH}/generative_qa/first_train/coqa-{TRANSFORMER}-max-tok-{MAX_TOKENS}",
+      "CONFIGS_PATH": "{DEEPPAVLOV_PATH}/configs"
     }
   }
 }

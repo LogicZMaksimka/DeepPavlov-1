@@ -1,7 +1,12 @@
 {
   "chainer": {
-    "in": ["question", "contexts"],
+    "in": ["question"],
     "pipe": [
+      {
+        "config_path": "{CONFIGS_PATH}/doc_retrieval/bpr_en.json",
+        "in": ["question"],
+        "out": ["contexts"]
+      },
       {
         "class_name": "torch_transformers_generative_qa_preprocessor",
         "vocab_file": "{TRANSFORMER}",
@@ -42,12 +47,12 @@
     "validation_patience": 10,
     "metrics": [
       {
-        "name": "ppl",
-        "inputs": ["ppl"]
-      },
-      {
         "name": "sacrebleu",
         "inputs": ["target", "answer"]
+      },
+      {
+        "name": "ppl",
+        "inputs": ["ppl"]
       }
     ],
     "class_name": "torch_trainer"
@@ -60,7 +65,8 @@
       "ROOT_PATH": "~/.deeppavlov",
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
-      "MODEL_PATH": "{MODELS_PATH}/generative_qa/first_train/coqa-{TRANSFORMER}-max-tok-{MAX_TOKENS}"
+      "MODEL_PATH": "{MODELS_PATH}/generative_qa/first_train/coqa-{TRANSFORMER}-max-tok-{MAX_TOKENS}",
+      "CONFIGS_PATH": "{DEEPPAVLOV_PATH}/configs"
     }
   }
 }
