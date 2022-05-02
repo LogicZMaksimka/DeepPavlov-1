@@ -36,9 +36,7 @@
     ],
     "log_every_n_batches": 50,
     "val_every_n_batches": 500,
-    "batch_size": 30,
-    "pytest_max_batches": 2,
-    "pytest_batch_size": 5,
+    "batch_size": 15,
     "validation_patience": 10,
     "metrics": [
       {
@@ -61,6 +59,12 @@
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
       "MODEL_PATH": "{MODELS_PATH}/generative_qa/first_train/coqa-{TRANSFORMER}-max-tok-{MAX_TOKENS}"
-    }
+    },
+    "download": [
+      {
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/generative_question_answering/model.pth.tar",
+        "subdir": "{MODEL_PATH}"
+      }
+    ]
   }
 }
