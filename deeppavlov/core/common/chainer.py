@@ -225,8 +225,8 @@ class Chainer(Component):
 
         for (in_keys, in_params), out_params, component in pipe:
             x = [mem[k] for k in in_params]
-            if "TorchGenerativeQA" in str(type(component)):
-               x += [mem["target_ids"]]
+            # if "TorchGenerativeQA" in str(type(component)):
+            #    x += [mem["target_ids"]]
             if in_keys:
                 res = component.__call__(**dict(zip(in_keys, x)))
             else:
