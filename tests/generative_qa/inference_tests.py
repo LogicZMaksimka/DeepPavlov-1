@@ -2,12 +2,12 @@ from deeppavlov import build_model, configs
 from transformers import T5Tokenizer
 import json
 import pytest
+import sys
 
 def get_dataset(path: str):
     with open(path, 'r') as file:
         dataset = json.load(file)
         return dataset
-
 
 def tokens_count(str: str):
     return len(pytest.tokenizer(str)["input_ids"])
@@ -18,19 +18,21 @@ class TestModelsOutput:
     pytest.tokenizer = T5Tokenizer.from_pretrained(pytest.model_name)
     pytest.gen_model = build_model(configs.squad.coqa_generative_qa_infer, download=True)
     pytest.retrive_gen_model = build_model(configs.squad.coqa_with_bpr_generative_qa_infer, download=True)
-    pytest.coqa_path = "/home/admin/.deeppavlov/downloads/coqa/coqa_max_tok_50.json"
-    pytest.coqa_dataset = get_dataset(pytest.coqa_path)
 
-    def test_generative_model_output_length(self):
+    def test_generative_model_output_length(self, coqa_path):
         """Generative model output is no longer than 20 tokens"""
-        for [[question, [contexts]], answer] in pytest.coqa_dataset["valid"][:1000]:
+        coqa_dataset = get_dataset(coqa_path)
+
+        for [[question, [contexts]], answer] in coqa_dataset["valid"][:1000]:
             model_answer = pytest.gen_model([question], [[contexts]])
             assert tokens_count(model_answer) <= 20
 
 
-    def test_retrieve_generative_model_output_length(self):
+    def test_retrieve_generative_model_output_length(self, coqa_path):
         """Retrieve + generative model output is no longer than 20 tokens"""
-        for [[question, [contexts]], answer] in pytest.coqa_dataset["valid"][:1000]:
+        coqa_dataset = get_dataset(coqa_path)
+
+        for [[question, [contexts]], answer] in coqa_dataset["valid"][:1000]:
             model_answer = pytest.retrive_gen_model([question])
             assert tokens_count(model_answer) <= 20
 

@@ -1,6 +1,5 @@
 import json
 import random
-import pytest
 from string import ascii_lowercase
 from deeppavlov import evaluate_model, configs
 from deeppavlov.metrics.sacrebleu import sacrebleu
@@ -9,6 +8,7 @@ from transformers import T5Tokenizer
 
 model_name = "t5-base"
 tokenizer = T5Tokenizer.from_pretrained(model_name)
+
 
 def tokens_count(str: str):
     return len(tokenizer(str)["input_ids"])
@@ -31,7 +31,7 @@ def create_typo_dataset(datset: dict(), out_data_path: str, typos_count: int = 1
 
 
 def eval_model(config):
-    model = evaluate_model(config, download=False)
+    model = evaluate_model(config, download=True)
     sacrebleu_score = model["valid"]["sacrebleu"]
     perplexity_score = model["valid"]["ppl"]
     return sacrebleu_score, perplexity_score
@@ -44,11 +44,9 @@ def get_dataset(path: str):
 
 # Dataset tests
 class TestDataset:
-    coqa_path = "/home/admin/.deeppavlov/downloads/coqa/coqa_max_tok_50.json"
-
-    def test_dataset_tokens_count(self):
+    def test_dataset_tokens_count(self, coqa_path):
         """Dataset contains questions and contexts with valid number of tokens"""
-        coqa_dataset = get_dataset(self.coqa_path)
+        coqa_dataset = get_dataset(coqa_path)
 
         for type in ["train", "valid"]:
             for [[question, [contexts]], answer] in coqa_dataset[type]:
