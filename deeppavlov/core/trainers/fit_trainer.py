@@ -30,6 +30,8 @@ from deeppavlov.core.data.data_learning_iterator import DataLearningIterator
 from deeppavlov.core.models.estimator import Estimator
 from deeppavlov.core.trainers.utils import Metric, parse_metrics, prettify_metrics, NumpyArrayEncoder
 
+import wandb
+
 log = getLogger(__name__)
 
 
@@ -237,6 +239,14 @@ class FitTrainer:
                 'y_predicted': y_predicted_item,
                 'y_true': y_true_item
             } for x_item, y_predicted_item, y_true_item in zip(x, y_predicted, y_true)]
+        
+
+        # TODO: правда ли что этот метод вызывается каждый раз когда считается какая-либо метрика?
+        #____________________________________________________________________________________________________________
+        if "train" in report:
+            print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+            wandb.log(report["train"], step=report["train"]["batches_seen"])
+        #____________________________________________________________________________________________________________
 
         return report
 
@@ -265,5 +275,4 @@ class FitTrainer:
             res[data_type] = report
             if print_reports:
                 print(json.dumps({data_type: report}, ensure_ascii=False, cls=NumpyArrayEncoder))
-
         return res

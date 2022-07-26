@@ -1,8 +1,8 @@
 {
   "dataset_reader": {
     "class_name": "sq_reader",
-    "valid_size": 10,
-    "data_path": "{DOWNLOADS_PATH}/coqa/coqa_max_tok_{MAX_TOKENS}.json"
+    "valid_size": 1,
+    "data_path": "/archive/savkin/parsed_datasets/natural_questions/nq_dataset_1_ctxs.json"
   },
   "dataset_iterator": {
     "class_name": "data_learning_iterator"
@@ -12,14 +12,15 @@
     "in_y": ["target"],
     "pipe": [
       {
-        "class_name": "torch_transformers_generative_qa_preprocessor",
+        "class_name": "torch_transformers_fid_preprocessor",
         "vocab_file": "{TRANSFORMER}",
         "max_seq_length": 512,
+        "answer_maxlength" : 20,
         "in": ["question", "contexts", "target"],
         "out": ["input_ids", "attention_mask", "target_ids"]
       },
       {
-        "class_name": "torch_generative_qa",
+        "class_name": "torch_generative_qa_fid",
         "pretrained_transformer": "{TRANSFORMER}",
         "save_path": "{MODEL_PATH}/model",
         "load_path": "{MODEL_PATH}/model",
@@ -32,9 +33,10 @@
         },
         "learning_rate_drop_patience": 20,
         "learning_rate_drop_div": 1.5,
+        "generate_max_length" : 20,
         "in": ["input_ids", "attention_mask"],
         "in_y": ["target_ids"],
-        "out": ["answer", "ppl"]
+        "out": ["answer"]
       }
     ],
     "out": ["answer"]
@@ -45,16 +47,25 @@
       "valid"
     ],
     "log_every_n_batches": 1,
-    "val_every_n_batches": 500,
-    "batch_size": 5,
-    "validation_patience": 100,
+    "val_every_n_batches": 5,
+    "batch_size": 1,
+    "max_batches" : 15,
+    "validation_patience": 5,
     "metrics": [
       {
-        "name": "ppl",
-        "inputs": ["ppl"]
+        "name": "sacrebleu",
+        "inputs": ["target", "answer"]
       },
       {
-        "name": "sacrebleu",
+        "name": "kbqa_accuracy",
+        "inputs": ["target", "answer"]
+      },
+      {
+        "name": "squad_v2_em",
+        "inputs": ["target", "answer"]
+      },
+      {
+        "name": "squad_v2_f1",
         "inputs": ["target", "answer"]
       }
     ],
@@ -62,19 +73,11 @@
   },
   "metadata": {
     "variables": {
-      "MAX_TOKENS" : 50,
-      "LOWERCASE": false,
       "TRANSFORMER": "t5-base",
       "ROOT_PATH": "~/.deeppavlov",
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
-      "MODEL_PATH": "{MODELS_PATH}/generative_qa/first_train/coqa-{TRANSFORMER}-max-tok-{MAX_TOKENS}"
-    },
-    "download": [
-      {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/generative_question_answering/model.pth.tar",
-        "subdir": "{MODEL_PATH}"
-      }
-    ]
+      "MODEL_PATH": "{MODELS_PATH}/generative_qa/fid/natural_questions"
+    }
   }
 }

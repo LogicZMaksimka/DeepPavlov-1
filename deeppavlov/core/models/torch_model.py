@@ -99,7 +99,7 @@ class TorchModel(NNModel):
         # we need to switch to eval mode here because by default it's in `train` mode.
         # But in case of `interact/build_model` usage, we need to have model in eval mode.
         self.model.eval()
-        log.info(f"Model was successfully initialized! Model summary:\n {self.model}")
+        # log.info(f"Model was successfully initialized! Model summary:\n {self.model}")
 
     def init_from_opt(self, model_func: str) -> None:
         """Initialize from scratch `self.model` with the architecture built in  `model_func` method of this class

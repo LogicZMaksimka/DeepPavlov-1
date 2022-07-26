@@ -3,14 +3,15 @@
     "in": ["question", "contexts"],
     "pipe": [
       {
-        "class_name": "torch_transformers_generative_qa_preprocessor",
+        "class_name": "torch_transformers_fid_preprocessor",
         "vocab_file": "{TRANSFORMER}",
         "max_seq_length": 512,
+        "answer_maxlength" : 20,
         "in": ["question", "contexts"],
         "out": ["input_ids", "attention_mask"]
       },
       {
-        "class_name": "torch_generative_qa",
+        "class_name": "torch_generative_qa_fid",
         "pretrained_transformer": "{TRANSFORMER}",
         "save_path": "{MODEL_PATH}/model",
         "load_path": "{MODEL_PATH}/model",
@@ -23,6 +24,7 @@
         },
         "learning_rate_drop_patience": 2,
         "learning_rate_drop_div": 2.0,
+        "generate_max_length" : 20,
         "in": ["input_ids", "attention_mask"],
         "out": ["answer"]
       }
@@ -31,19 +33,11 @@
   },
   "metadata": {
     "variables": {
-      "MAX_TOKENS" : 50,
-      "LOWERCASE": false,
       "TRANSFORMER": "t5-base",
       "ROOT_PATH": "~/.deeppavlov",
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
-      "MODEL_PATH": "{MODELS_PATH}/generative_qa/first_train/coqa-{TRANSFORMER}-max-tok-{MAX_TOKENS}"
-    },
-    "download": [
-      {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/generative_question_answering/model.pth.tar",
-        "subdir": "{MODEL_PATH}"
-      }
-    ]
+      "MODEL_PATH": "{MODELS_PATH}/generative_qa/fid/natural_questions"
+    }
   }
 }

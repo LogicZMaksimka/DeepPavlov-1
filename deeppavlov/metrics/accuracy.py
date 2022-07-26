@@ -26,7 +26,6 @@ from deeppavlov.models.go_bot.nlg.dto.json_nlg_response import JSONNLGResponse
 def ppl(ppl_list):
     return sum(ppl_list) / len(ppl_list)
 
-
 @register_metric('accuracy')
 def accuracy(y_true: [list, np.ndarray], y_predicted: [list, np.ndarray]) -> float:
     """

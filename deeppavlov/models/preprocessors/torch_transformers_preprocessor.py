@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from os import truncate
 import re
 import random
 from collections import defaultdict
@@ -66,7 +67,8 @@ class TorchTransformersMultiplechoicePreprocessor(Component):
             self.tokenizer = AutoTokenizer(vocab_file=vocab_file,
                                            do_lower_case=do_lower_case)
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(vocab_file, do_lower_case=do_lower_case)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                vocab_file, do_lower_case=do_lower_case)
 
     def tokenize_mc_examples(self,
                              contexts: List[List[str]],
@@ -94,7 +96,8 @@ class TorchTransformersMultiplechoicePreprocessor(Component):
             return_tensors='pt',
         )
 
-        padded_examples = {k: v.view(batch_size, num_choices, -1) for k, v in padded_examples.items()}
+        padded_examples = {k: v.view(batch_size, num_choices, -1)
+                           for k, v in padded_examples.items()}
 
         return padded_examples
 
@@ -148,7 +151,8 @@ class TorchTransformersPreprocessor(Component):
             self.tokenizer = AutoTokenizer(vocab_file=vocab_file,
                                            do_lower_case=do_lower_case)
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(vocab_file, do_lower_case=do_lower_case)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                vocab_file, do_lower_case=do_lower_case)
 
     def __call__(self, texts_a: List[str], texts_b: Optional[List[str]] = None) -> Union[List[InputFeatures],
                                                                                          Tuple[List[InputFeatures],
@@ -197,7 +201,8 @@ class TorchTransformersGenerativeQAPreprocessor(Component):
             self.tokenizer = AutoTokenizer(vocab_file=vocab_file,
                                            do_lower_case=do_lower_case)
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(vocab_file, do_lower_case=do_lower_case)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                vocab_file, do_lower_case=do_lower_case)
         self.answer_maxlength = answer_maxlength
 
     def __call__(self, questions_batch: List[str], contexts_batch: List[List[str]], targets_batch: List[str] = None):
@@ -216,7 +221,7 @@ class TorchTransformersGenerativeQAPreprocessor(Component):
             for j in range(max_length - len(input_ids_batch[i])):
                 input_ids_batch[i].append(0)
                 attention_mask_batch[i].append(0)
-        
+
         target_ids_batch = None
         if targets_batch is not None:
             targets_batch = list(targets_batch)
@@ -227,9 +232,78 @@ class TorchTransformersGenerativeQAPreprocessor(Component):
                 truncation=True if self.answer_maxlength > 0 else False,
             )
             target_ids_batch = target_encoding["input_ids"]
-        
+
         return input_ids_batch, attention_mask_batch, target_ids_batch
 
+
+
+
+@register('torch_transformers_fid_preprocessor')
+class TorchTransformersFiDPreprocessor(Component):
+    def __init__(self,
+                 vocab_file: str,
+                 do_lower_case: bool = True,
+                 max_seq_length: int = 512,
+                 return_tokens: bool = False,
+                 answer_maxlength: int = 20,
+                 **kwargs) -> None:
+        self.max_seq_length = max_seq_length
+        self.return_tokens = return_tokens
+        self.answer_maxlength = answer_maxlength
+
+        if Path(vocab_file).is_file():
+            vocab_file = str(expand_path(vocab_file))
+            self.tokenizer = AutoTokenizer(vocab_file=vocab_file, do_lower_case=do_lower_case)
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained(vocab_file, do_lower_case=do_lower_case)
+        
+    
+    def encode_question_passages(self, passages_batch: List[List[str]]):
+        passage_ids, passage_masks = [], []
+        for text_passages in passages_batch:
+            passages_encoding = self.tokenizer(
+                text_passages,
+                max_length=self.max_seq_length if self.max_seq_length > 0 else None,
+                pad_to_max_length=True,
+                return_tensors='pt',
+                truncation=True
+            )
+            passage_ids.append(passages_encoding['input_ids'][None])
+            passage_masks.append(passages_encoding['attention_mask'][None])
+
+        passage_ids = torch.cat(passage_ids, dim=0)
+        passage_masks = torch.cat(passage_masks, dim=0)
+        return passage_ids, passage_masks
+    
+    def encode_targets(self, targets_batch: List[str] = None):
+        target_ids, target_masks = None, None
+        if targets_batch is not None:
+            target_encoding = self.tokenizer(
+                targets_batch,
+                max_length=self.answer_maxlength if self.answer_maxlength > 0 else None,
+                pad_to_max_length=True,
+                truncation=True if self.answer_maxlength > 0 else False,
+            )
+            target_ids = target_encoding["input_ids"]
+
+            # TODO: разберись с этим
+            # target_masks = list(map(bool, target_encoding["attention_mask"]))
+            # target_ids = target_ids.masked_fill(~target_masks, -100)
+        return target_ids, target_masks
+
+    def __call__(self, questions_batch: List[str], passages_batch: List[List[str]], targets_batch: List[str] = None):
+        # Append question to all the contexts
+        question_passages_batch = [[question + " " + passage for passage in text_passages] 
+                                    for (question, text_passages) in zip(questions_batch, passages_batch)]
+
+        # Encode passages
+        # TODO: max_seq_length не надо случайно уменьшать как min(max(lengths), self.max_seq_length) ?
+        question_passages_ids, question_passage_masks = self.encode_question_passages(question_passages_batch)
+
+        # Encode targets
+        target_ids, target_masks = self.encode_targets(targets_batch)
+
+        return question_passages_ids, question_passage_masks, target_ids
 
 @register('torch_squad_transformers_preprocessor')
 class TorchSquadTransformersPreprocessor(Component):
@@ -265,7 +339,8 @@ class TorchSquadTransformersPreprocessor(Component):
             self.tokenizer = AutoTokenizer(vocab_file=vocab_file,
                                            do_lower_case=do_lower_case)
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(vocab_file, do_lower_case=do_lower_case)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                vocab_file, do_lower_case=do_lower_case)
 
     def __call__(self, texts_a: List[str], texts_b: Optional[List[str]] = None) -> Union[List[InputFeatures],
                                                                                          Tuple[List[InputFeatures],
@@ -302,7 +377,8 @@ class TorchSquadTransformersPreprocessor(Component):
                 if self.add_token_type_ids:
                     input_ids = encoded_dict['input_ids']
                     seq_len = input_ids.size(1)
-                    sep = torch.where(input_ids == self.tokenizer.sep_token_id)[1][0].item()
+                    sep = torch.where(input_ids == self.tokenizer.sep_token_id)[
+                        1][0].item()
                     len_a = min(sep + 1, seq_len)
                     len_b = seq_len - len_a
                     encoded_dict['token_type_ids'] = torch.cat((torch.zeros(1, len_a, dtype=int),
@@ -316,7 +392,8 @@ class TorchSquadTransformersPreprocessor(Component):
                                           label=None)
             input_features.append(curr_features)
             if self.return_tokens:
-                tokens.append(self.tokenizer.convert_ids_to_tokens(encoded_dict['input_ids'][0]))
+                tokens.append(self.tokenizer.convert_ids_to_tokens(
+                    encoded_dict['input_ids'][0]))
 
         if self.return_tokens:
             return input_features, tokens
@@ -369,7 +446,8 @@ class TorchTransformersNerPreprocessor(Component):
             self.tokenizer = AutoTokenizer(vocab_file=vocab_file,
                                            do_lower_case=do_lower_case)
         else:
-            self.tokenizer = AutoTokenizer.from_pretrained(vocab_file, do_lower_case=do_lower_case)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                vocab_file, do_lower_case=do_lower_case)
         self.token_masking_prob = token_masking_prob
 
     def __call__(self,
@@ -397,7 +475,8 @@ class TorchTransformersNerPreprocessor(Component):
                     raise RuntimeError(f"input sequence after bert tokenization"
                                        f" shouldn't exceed {self.max_seq_length} tokens.")
             subword_tokens.append(sw_toks)
-            subword_tok_ids.append(self.tokenizer.convert_tokens_to_ids(sw_toks))
+            subword_tok_ids.append(
+                self.tokenizer.convert_tokens_to_ids(sw_toks))
             startofword_markers.append(sw_marker)
             subword_tags.append(sw_ys)
             assert len(sw_marker) == len(sw_toks) == len(subword_tok_ids[-1]) == len(sw_ys), \
@@ -406,13 +485,14 @@ class TorchTransformersNerPreprocessor(Component):
                 f" for tokens = `{toks}` should match"
 
         subword_tok_ids = zero_pad(subword_tok_ids, dtype=int, padding=0)
-        startofword_markers = zero_pad(startofword_markers, dtype=int, padding=0)
+        startofword_markers = zero_pad(
+            startofword_markers, dtype=int, padding=0)
         attention_mask = Mask()(subword_tokens)
 
         if tags is not None:
             if self.provide_subword_tags:
                 return tokens, subword_tokens, subword_tok_ids, \
-                       attention_mask, startofword_markers, subword_tags
+                    attention_mask, startofword_markers, subword_tags
             else:
                 nonmasked_tags = [[t for t in ts if t != 'X'] for ts in tags]
                 for swts, swids, swms, ts in zip(subword_tokens,
@@ -420,13 +500,16 @@ class TorchTransformersNerPreprocessor(Component):
                                                  startofword_markers,
                                                  nonmasked_tags):
                     if (len(swids) != len(swms)) or (len(ts) != sum(swms)):
-                        log.warning('Not matching lengths of the tokenization!')
-                        log.warning(f'Tokens len: {len(swts)}\n Tokens: {swts}')
-                        log.warning(f'Markers len: {len(swms)}, sum: {sum(swms)}')
+                        log.warning(
+                            'Not matching lengths of the tokenization!')
+                        log.warning(
+                            f'Tokens len: {len(swts)}\n Tokens: {swts}')
+                        log.warning(
+                            f'Markers len: {len(swms)}, sum: {sum(swms)}')
                         log.warning(f'Masks: {swms}')
                         log.warning(f'Tags len: {len(ts)}\n Tags: {ts}')
                 return tokens, subword_tokens, subword_tok_ids, \
-                       attention_mask, startofword_markers, nonmasked_tags
+                    attention_mask, startofword_markers, nonmasked_tags
         return tokens, subword_tokens, subword_tok_ids, startofword_markers, attention_mask
 
     @staticmethod
@@ -455,9 +538,11 @@ class TorchTransformersNerPreprocessor(Component):
                 else:
                     tokens_subword.extend(subwords)
                 if subword_mask_mode == "last":
-                    startofword_markers.extend([0] * (len(subwords) - 1) + [token_marker])
+                    startofword_markers.extend(
+                        [0] * (len(subwords) - 1) + [token_marker])
                 else:
-                    startofword_markers.extend([token_marker] + [0] * (len(subwords) - 1))
+                    startofword_markers.extend(
+                        [token_marker] + [0] * (len(subwords) - 1))
                 tags_subword.extend([tag] + ['X'] * (len(subwords) - 1))
 
         tokens_subword.append('[SEP]')
@@ -585,7 +670,8 @@ class TorchRecordPostprocessor:
             self.reset_accumulator()
             self.total_examples = num_examples[0]
         for index, label, probability, entity in zip(idx, y, y_pred_probas, entities):
-            self.record_example_accumulator.add_flat_example(index, label, probability, entity)
+            self.record_example_accumulator.add_flat_example(
+                index, label, probability, entity)
             self.record_example_accumulator.collect_nested_example(index)
             if self.record_example_accumulator.examples_processed >= self.total_examples:
                 # start over if all examples were processed
@@ -615,7 +701,8 @@ class RecordExampleAccumulator:
         self.examples_processed: int = 0
         self.record_counter: Dict[str, int] = defaultdict(lambda: 0)
         self.nested_len: Dict[str, int] = dict()
-        self.flat_examples: Dict[str, List[RecordFlatExample]] = defaultdict(lambda: [])
+        self.flat_examples: Dict[str, List[RecordFlatExample]] = defaultdict(lambda: [
+        ])
         self.nested_examples: Dict[str, RecordNestedExample] = dict()
         self.collected_indices: Set[str] = set()
         self.returned_indices: Set[str] = set()
@@ -629,7 +716,8 @@ class RecordExampleAccumulator:
             probability: predicted probability
             entity: candidate entity
         """
-        self.flat_examples[index].append(RecordFlatExample(index, label, probability, entity))
+        self.flat_examples[index].append(
+            RecordFlatExample(index, label, probability, entity))
         if index not in self.nested_len:
             self.nested_len[index] = self.get_expected_len(index)
         self.record_counter[index] += 1
@@ -667,7 +755,8 @@ class RecordExampleAccumulator:
             prediction_index = np.argmax(probabilities)
             prediction = entities[prediction_index]
 
-            self.nested_examples[index] = RecordNestedExample(index, prediction, answers)
+            self.nested_examples[index] = RecordNestedExample(
+                index, prediction, answers)
             self.collected_indices.add(index)
 
     def return_examples(self) -> List[RecordNestedExample]:
@@ -677,7 +766,8 @@ class RecordExampleAccumulator:
         Returns:
             List[RecordNestedExample]: zero or more nested examples
         """
-        indices_to_return: Set[str] = self.collected_indices.difference(self.returned_indices)
+        indices_to_return: Set[str] = self.collected_indices.difference(
+            self.returned_indices)
         examples_to_return: List[RecordNestedExample] = []
         for index in indices_to_return:
             examples_to_return.append(self.nested_examples[index])

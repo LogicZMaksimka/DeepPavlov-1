@@ -19,6 +19,8 @@ from nltk.translate.bleu_score import corpus_bleu, sentence_bleu, SmoothingFunct
 
 from deeppavlov.core.common.metrics_registry import register_metric
 from deeppavlov.metrics.google_bleu import compute_bleu
+from sacrebleu.metrics import BLEU
+
 
 SMOOTH = SmoothingFunction()
 
@@ -79,3 +81,9 @@ def per_item_dialog_bleu(y_true, y_predicted):
     y_true = (y['text'] for dialog in y_true for y in dialog)
     return corpus_bleu([[y_t.lower().split()] for y_t in y_true],
                        [y.lower().split() for y_p in y_predicted for y in y_p])
+
+
+@register_metric('sacrebleu')
+def sacrebleu(y_true: List[str], y_predicted: List[str]) -> float:
+    bleu = BLEU()
+    return bleu.corpus_score(y_predicted, [y_true]).score

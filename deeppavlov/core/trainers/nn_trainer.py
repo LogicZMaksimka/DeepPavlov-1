@@ -26,6 +26,8 @@ from deeppavlov.core.data.data_learning_iterator import DataLearningIterator
 from deeppavlov.core.trainers.fit_trainer import FitTrainer
 from deeppavlov.core.trainers.utils import parse_metrics, NumpyArrayEncoder
 
+import wandb
+
 log = getLogger(__name__)
 
 
@@ -258,6 +260,13 @@ class NNTrainer(FitTrainer):
 
         report = {'train': report}
         print(json.dumps(report, ensure_ascii=False, cls=NumpyArrayEncoder))
+
+         # TODO: правда ли что этот метод вызывается каждый раз когда считается какая-либо метрика?
+        #____________________________________________________________________________________________________________
+        if "train" in report:
+            print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
+            wandb.log(report["train"], step=report["train"]["batches_seen"])
+        #____________________________________________________________________________________________________________
 
     def _send_event(self, event_name: str, data: Optional[dict] = None) -> None:
         report = {
