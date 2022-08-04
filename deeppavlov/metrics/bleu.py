@@ -20,7 +20,7 @@ from nltk.translate.bleu_score import corpus_bleu, sentence_bleu, SmoothingFunct
 from deeppavlov.core.common.metrics_registry import register_metric
 from deeppavlov.metrics.google_bleu import compute_bleu
 from sacrebleu.metrics import BLEU
-
+import numpy as np
 
 SMOOTH = SmoothingFunction()
 
@@ -85,5 +85,11 @@ def per_item_dialog_bleu(y_true, y_predicted):
 
 @register_metric('sacrebleu')
 def sacrebleu(y_true: List[str], y_predicted: List[str]) -> float:
+    y_true_padded = []
+    max_answers_cnt = max(len(answers) for answers in y_true)
+    for answers in y_true:
+        y_true_padded.append(answers + [''] * (max_answers_cnt - len(answers)))
+    y_true = np.transpose(y_true_padded).tolist()
+
     bleu = BLEU()
-    return bleu.corpus_score(y_predicted, [y_true]).score
+    return bleu.corpus_score(y_predicted, y_true).score

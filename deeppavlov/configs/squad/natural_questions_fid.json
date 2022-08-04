@@ -1,15 +1,15 @@
 {
   "dataset_reader": {
     "class_name": "sq_reader",
-    "valid_size": 1,
-    "data_path": "/archive/savkin/parsed_datasets/natural_questions/nq_dataset_1_ctxs.json"
+    "valid_size": 1000,
+    "data_path": "/archive/savkin/parsed_datasets/trivia_qa/trivia_qa_dataset_25_0.4_0.4_0.2.json"
   },
   "dataset_iterator": {
     "class_name": "data_learning_iterator"
   },
   "chainer": {
     "in": ["question", "contexts"],
-    "in_y": ["target"],
+    "in_y": ["target", "gold_answers"],
     "pipe": [
       {
         "class_name": "torch_transformers_fid_preprocessor",
@@ -22,51 +22,51 @@
       {
         "class_name": "torch_generative_qa_fid",
         "pretrained_transformer": "{TRANSFORMER}",
-        "save_path": "{MODEL_PATH}/model",
-        "load_path": "{MODEL_PATH}/model",
+        "save_path": "{MODEL_PATH}",
+        "load_path": "{MODEL_PATH}",
         "optimizer": "AdamW",
         "optimizer_parameters": {
           "lr": 3e-04,
           "weight_decay": 0.01,
           "betas": [0.9, 0.999],
-          "eps": 1e-06
+          "eps": 1e-08
         },
-        "learning_rate_drop_patience": 20,
-        "learning_rate_drop_div": 1.5,
+        "learning_rate_drop_patience": 4,
+        "learning_rate_drop_div": 2,
+        "min_learning_rate": 1e-5,
         "generate_max_length" : 20,
         "in": ["input_ids", "attention_mask"],
         "in_y": ["target_ids"],
-        "out": ["answer"]
+        "out": ["model_answer"]
       }
     ],
-    "out": ["answer"]
+    "out": ["model_answer"]
   },
   "train": {
     "show_examples": false,
     "evaluation_targets": [
       "valid"
     ],
-    "log_every_n_batches": 1,
-    "val_every_n_batches": 5,
-    "batch_size": 1,
-    "max_batches" : 15,
-    "validation_patience": 5,
+    "log_every_n_batches": 100,
+    "val_every_n_batches": 600,
+    "batch_size": 5,
+    "validation_patience": 30,
     "metrics": [
       {
-        "name": "sacrebleu",
-        "inputs": ["target", "answer"]
-      },
-      {
-        "name": "kbqa_accuracy",
-        "inputs": ["target", "answer"]
-      },
-      {
         "name": "squad_v2_em",
-        "inputs": ["target", "answer"]
+        "inputs": ["gold_answers", "model_answer"]
       },
       {
         "name": "squad_v2_f1",
-        "inputs": ["target", "answer"]
+        "inputs": ["gold_answers", "model_answer"]
+      },
+      {
+        "name": "sacrebleu",
+        "inputs": ["gold_answers", "model_answer"]
+      },
+      {
+        "name": "kbqa_accuracy",
+        "inputs": ["gold_answers", "model_answer"]
       }
     ],
     "class_name": "torch_trainer"
@@ -77,7 +77,7 @@
       "ROOT_PATH": "~/.deeppavlov",
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
-      "MODEL_PATH": "{MODELS_PATH}/generative_qa/fid/natural_questions"
+      "MODEL_PATH": "{MODELS_PATH}/generative_qa/fid/natural_questions/"
     }
   }
 }

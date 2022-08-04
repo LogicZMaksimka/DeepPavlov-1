@@ -25,6 +25,7 @@ from deeppavlov.core.common.registry import register
 from deeppavlov.core.data.data_learning_iterator import DataLearningIterator
 from deeppavlov.core.trainers.fit_trainer import FitTrainer
 from deeppavlov.core.trainers.utils import parse_metrics, NumpyArrayEncoder
+from git import Commit
 
 import wandb
 
@@ -222,6 +223,8 @@ class NNTrainer(FitTrainer):
         print(json.dumps(report, ensure_ascii=False, cls=NumpyArrayEncoder))
         self.validation_number += 1
 
+        wandb.log(report, step=self.train_batches_seen)
+    
     def _log(self, iterator: DataLearningIterator,
              tensorboard_tag: Optional[str] = None, tensorboard_index: Optional[int] = None) -> None:
         self._send_event(event_name='before_log')
@@ -261,12 +264,7 @@ class NNTrainer(FitTrainer):
         report = {'train': report}
         print(json.dumps(report, ensure_ascii=False, cls=NumpyArrayEncoder))
 
-         # TODO: правда ли что этот метод вызывается каждый раз когда считается какая-либо метрика?
-        #____________________________________________________________________________________________________________
-        if "train" in report:
-            print("YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
-            wandb.log(report["train"], step=report["train"]["batches_seen"])
-        #____________________________________________________________________________________________________________
+        wandb.log(report, step=self.train_batches_seen)
 
     def _send_event(self, event_name: str, data: Optional[dict] = None) -> None:
         report = {

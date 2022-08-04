@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import re
 import json
 import math
@@ -229,7 +230,7 @@ class TorchGenerativeQA(TorchModel):
 @register('torch_generative_qa_fid')
 class TorchFiD(TorchModel):
     def __init__(self,
-                 pretrained_transformer: str,
+                 pretrained_transformer: str = "t5-base",
                  attention_probs_keep_prob: Optional[float] = None,
                  hidden_keep_prob: Optional[float] = None,
                  optimizer: str = "AdamW",
@@ -240,7 +241,7 @@ class TorchFiD(TorchModel):
                  load_before_drop: bool = True,
                  clip_norm: Optional[float] = None,
                  min_learning_rate: float = 1e-06,
-                 generate_max_length: int = 50,
+                 generate_max_length: int = 20,
                  **kwargs) -> None:        
 
         if not optimizer_parameters:
@@ -270,6 +271,7 @@ class TorchFiD(TorchModel):
         input_ids_batch = torch.LongTensor(input_ids_batch).to(self.device)
         attention_mask_batch = torch.LongTensor(attention_mask_batch).to(self.device)
         target_ids_batch = torch.LongTensor(target_ids_batch).to(self.device)
+
         input_ = {
             'input_ids': input_ids_batch,
             'attention_mask': attention_mask_batch,
@@ -314,80 +316,78 @@ class TorchFiD(TorchModel):
         answers_batch = self.tokenizer.batch_decode(answer_ids_batch, skip_special_tokens=True)        
         return answers_batch
     
+    @overrides
+    def save(self, fname: Optional[str] = None, *args, **kwargs):
+        if fname is None:
+            fname = self.save_path
+        os.makedirs(fname, exist_ok=True)
+        logger.info(f"Saving checkpoint to {fname}.")
+
+        # Save model
+        model_dir_path = fname
+        model_to_save = self.model.module if hasattr(self.model, "module") else self.model
+        model_to_save.save_pretrained(model_dir_path)
+        
+        # Save optimizer and scheduler
+        optimizer_path = os.path.join(fname, "optimizer.pth.tar")
+        optimizer_state = {
+            "optimizer": self.optimizer.state_dict()
+        }
+        torch.save(optimizer_state, optimizer_path)
+
+
+    def init_optimizer_from_scratch(self) -> None:
+        self.optimizer = getattr(torch.optim, self.optimizer_name)(
+        self.model.parameters(), **self.optimizer_parameters)
+        
+        if self.lr_scheduler_name is not None:
+            self.lr_scheduler = getattr(torch.optim.lr_scheduler, self.lr_scheduler_name)(
+                self.optimizer, **self.lr_scheduler_parameters)
+        
+        if self.opt.get("criterion", None):
+            self.criterion = getattr(torch.nn, self.opt.get("criterion", None))()
+
+    def init_from_scratch(self) -> None:
+        logger.info(f"From pretrained {self.pretrained_transformer}.")
+        self.tokenizer = T5Tokenizer.from_pretrained(self.pretrained_transformer, return_dict=False)
+        t5 = T5ForConditionalGeneration.from_pretrained(self.pretrained_transformer)
+
+        self.model = FiDT5(t5.config)
+        self.model.load_t5(t5.state_dict())
+        self.model.to(self.device)
+
+        self.init_optimizer_from_scratch()
     
-    def load_default(self) -> None:
-        if self.pretrained_transformer:
-            self.tokenizer = T5Tokenizer.from_pretrained(self.pretrained_transformer, return_dict=False)
-            t5 = T5ForConditionalGeneration.from_pretrained(self.pretrained_transformer)
-            # проинициализировали архитектуру модели (веса ещё не загрузили)          
-            self.model = FiDT5(t5.config)
-            self.model.load_t5(t5.state_dict())
-            self.model.to(self.device)
 
-            # говорим какой у нас оптимайзер и планировщик lr
-            self.optimizer = getattr(torch.optim, self.optimizer_name)(
-                self.model.parameters(), **self.optimizer_parameters)
-            if self.lr_scheduler_name is not None:
-                self.lr_scheduler = getattr(torch.optim.lr_scheduler, self.lr_scheduler_name)(
-                    self.optimizer, **self.lr_scheduler_parameters)
+    def load_from_checkpoint(self, model_dir_path: str, optimizer_path: str):
+        logger.info(f"Loading model from {model_dir_path}.")
+        self.model = FiDT5.from_pretrained(model_dir_path)
+        self.model = self.model.to(self.device)
 
-            if self.opt.get("criterion", None):
-                self.criterion = getattr(torch.nn, self.opt.get("criterion", None))()
-        else:
-            raise AttributeError("Model is not defined.")
+        logger.info(f"Loading optimizer from {optimizer_path}.")
+        self.init_optimizer_from_scratch()
+        optimizer_state = torch.load(optimizer_path, map_location=self.device)
+        self.optimizer.load_state_dict(optimizer_state["optimizer"])
 
     @overrides
-    def load(self, fname=None):
+    def load(self, fname: Optional[str] = None, *args, **kwargs) -> None:
         if fname is not None:
             self.load_path = fname
-        
-        # Initialize model from scratch
-        self.load_default()
-    
-        # Load model weights and
-        # Выставляем у ранее объявленных типов оптимайзеров и моделей
-        # конкретные веса и параметры хранящиеся в чекпоинте
-        if self.load_path:
+
+        # Loading weights from checkpoint
+        if self.load_path is not None:
             logger.info(f"Load path {self.load_path} is given.")
-            if isinstance(self.load_path, Path) and not self.load_path.parent.is_dir():
-                raise ConfigError("Provided load path is incorrect!")
+            model_dir_path = self.load_path
+            optimizer_path = os.path.join(self.load_path, "optimizer.pth.tar")
 
-            weights_path = Path(self.load_path.resolve())
-            weights_path = weights_path.with_suffix(f".pth.tar")
-            if weights_path.exists():
-                logger.info(f"Load path {weights_path} exists.")
-                logger.info(f"Initializing `{self.__class__.__name__}` from saved.")
-                logger.info(f"Loading weights from {weights_path}.")
-                
-                # загружаем чекпоинт со всей полезной информацией
-                checkpoint = torch.load(weights_path, map_location=self.device)
-
-                model_state = checkpoint["model_state_dict"]
-                optimizer_state = checkpoint["optimizer_state_dict"]
-                # load a multi-gpu model on a single device
-                if not self.is_data_parallel and "module." in list(model_state.keys())[0]:
-                    tmp_model_state = {}
-                    for key, value in model_state.items():
-                        tmp_model_state[re.sub("module.", "", key)] = value
-                    model_state = tmp_model_state
-
-                strict_load_flag = bool([key for key in checkpoint["model_state_dict"].keys()
-                                         if key.endswith("embeddings.position_ids")])
-
-                #TODO: чекни что за приколы с флагом strict
-
-                # выгружаем из чекпоинта веса модели, параметры оптимайзера и количество эпох
-                self.model.load_state_dict(checkpoint["model_state_dict"], strict=strict_load_flag)
-                self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-                self.epochs_done = checkpoint.get("epochs_done", 0)
-
+            if Path(model_dir_path).exists() and Path(optimizer_path).exists():
+                self.load_from_checkpoint(model_dir_path, optimizer_path)
             else:
-                logger.info(f"Init from scratch. Load path {weights_path} does not exist.")
-        
-        # Enter parallel mode if possible
+                self.init_from_scratch()
+                logger.info(f"Init from scratch. Model_path: {model_dir_path} or optimizer_path: {optimizer_path} does not exist.")
+        else:
+            self.init_from_scratch()
+            logger.info(f"Init from scratch. Load path {self.load_path} does not exist.")
+
         if self.device.type == "cuda" and torch.cuda.device_count() > 1:
-
             self.model = torch.nn.DataParallel(self.model)
-            self.model.to(self.device)
-
-            # TODO: в препроцессинге соответсвенно нужно будет разбивать данные на несколько gpu

@@ -282,22 +282,21 @@ class TorchTransformersFiDPreprocessor(Component):
                 targets_batch,
                 max_length=self.answer_maxlength if self.answer_maxlength > 0 else None,
                 pad_to_max_length=True,
+                return_tensors='pt',
                 truncation=True if self.answer_maxlength > 0 else False,
             )
             target_ids = target_encoding["input_ids"]
-
-            # TODO: разберись с этим
-            # target_masks = list(map(bool, target_encoding["attention_mask"]))
-            # target_ids = target_ids.masked_fill(~target_masks, -100)
+            target_mask = target_encoding["attention_mask"].bool()
+            # target_ids = target_ids.masked_fill(~target_mask, -100)
         return target_ids, target_masks
 
-    def __call__(self, questions_batch: List[str], passages_batch: List[List[str]], targets_batch: List[str] = None):
+    def __call__(self, questions_batch: List[str], passages_batch: List[List[str]], targets_batch: List[str] = None):       
         # Append question to all the contexts
-        question_passages_batch = [[question + " " + passage for passage in text_passages] 
+        prepare_data = lambda q, c: f"question: {q}, context: {c}"
+        question_passages_batch = [[prepare_data(question, passage) for passage in text_passages] 
                                     for (question, text_passages) in zip(questions_batch, passages_batch)]
 
         # Encode passages
-        # TODO: max_seq_length не надо случайно уменьшать как min(max(lengths), self.max_seq_length) ?
         question_passages_ids, question_passage_masks = self.encode_question_passages(question_passages_batch)
 
         # Encode targets
