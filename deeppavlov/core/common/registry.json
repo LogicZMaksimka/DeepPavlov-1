@@ -174,7 +174,7 @@
   "tfidf_ranker": "deeppavlov.models.doc_retrieval.tfidf_ranker:TfidfRanker",
   "tfidf_weighted": "deeppavlov.models.embedders.tfidf_weighted_embedder:TfidfWeightedEmbedder",
   "top1_elector": "deeppavlov.models.spelling_correction.electors.top1_elector:TopOneElector",
-  "torch_generative_qa": "deeppavlov.models.torch_bert.torch_generative_qa:TorchGenerativeQA",
+  "torch_generative_qa_t5": "deeppavlov.models.torch_bert.torch_generative_qa:TorchT5",
   "torch_generative_qa_fid": "deeppavlov.models.torch_bert.torch_generative_qa:TorchFiD",
   "torch_squad_transformers_preprocessor": "deeppavlov.models.preprocessors.torch_transformers_preprocessor:TorchSquadTransformersPreprocessor",
   "torch_transformers_ner_preprocessor": "deeppavlov.models.preprocessors.torch_transformers_preprocessor:TorchTransformersNerPreprocessor",

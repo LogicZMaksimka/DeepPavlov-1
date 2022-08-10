@@ -9,7 +9,7 @@
         "bpr_checkpoint": "bpr_finetuned_nq_adv.ckpt",
         "bpr_index": "bpr_finetuned_nq_adv.idx",
         "pretrained_model": "bert-base-uncased",
-        "top_n": 25,
+        "top_n": 1,
         "in": ["questions"],
         "out": ["par_ids"]
       },

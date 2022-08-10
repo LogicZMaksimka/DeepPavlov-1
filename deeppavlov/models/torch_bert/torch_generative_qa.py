@@ -49,8 +49,8 @@ def softmax_mask(val, mask):
     return -inf * (1 - mask.to(torch.float32)) + val
 
 
-@register('torch_generative_qa')
-class TorchGenerativeQA(TorchModel):
+@register('torch_generative_qa_t5')
+class TorchT5(TorchModel):
     def __init__(self,
                  pretrained_transformer: str,
                  attention_probs_keep_prob: Optional[float] = None,
@@ -63,6 +63,7 @@ class TorchGenerativeQA(TorchModel):
                  load_before_drop: bool = True,
                  clip_norm: Optional[float] = None,
                  min_learning_rate: float = 1e-06,
+                 generate_max_length: int = 20,
                  **kwargs) -> None:
 
         if not optimizer_parameters:
@@ -70,6 +71,7 @@ class TorchGenerativeQA(TorchModel):
                                     "weight_decay": 0.01,
                                     "betas": (0.9, 0.999),
                                     "eps": 1e-6}
+        self.generate_max_length = generate_max_length
 
         self.attention_probs_keep_prob = attention_probs_keep_prob
         self.hidden_keep_prob = hidden_keep_prob
@@ -99,7 +101,7 @@ class TorchGenerativeQA(TorchModel):
         }
 
         self.optimizer.zero_grad()
-        loss = self.model(**input_).loss
+        loss = self.model(**input_)[0]
         if self.is_data_parallel:
             loss = loss.mean()
         loss.backward()
@@ -119,7 +121,7 @@ class TorchGenerativeQA(TorchModel):
     def is_data_parallel(self) -> bool:
         return isinstance(self.model, torch.nn.DataParallel)
 
-    def __call__(self, input_ids_batch, attention_mask_batch, target_ids_batch=None):
+    def __call__(self, input_ids_batch, attention_mask_batch):
         input_ids_batch = torch.LongTensor(input_ids_batch).to(self.device)
         attention_mask_batch = torch.LongTensor(attention_mask_batch).to(self.device)
 
@@ -128,28 +130,12 @@ class TorchGenerativeQA(TorchModel):
             'attention_mask': attention_mask_batch,
         }
 
-        ppl = 0.0
         model = self.model.module if hasattr(self.model, "module") else self.model
         with torch.no_grad():
-            answer_ids_batch = model.generate(**input_)
-            if target_ids_batch is not None:
-                target_ids_batch = torch.LongTensor(
-                    target_ids_batch).to(self.device)
-                loss = model(input_ids=input_ids_batch, attention_mask=attention_mask_batch,
-                                  labels=target_ids_batch).loss
-                ppl = torch.exp(loss)
-                ppl = [ppl.detach().cpu().numpy().tolist()]
+            answer_ids_batch = model.generate(max_length=self.generate_max_length, **input_)
 
-        answers_batch = []
-        for answer_ids in answer_ids_batch:
-            answer = self.tokenizer.decode(
-                answer_ids, skip_special_tokens=True)
-            answers_batch.append(answer)
-
-        if target_ids_batch is None:
-            return answers_batch
-        else:
-            return answers_batch, ppl
+        answers_batch = self.tokenizer.batch_decode(answer_ids_batch, skip_special_tokens=True)        
+        return answers_batch
 
 
     @overrides

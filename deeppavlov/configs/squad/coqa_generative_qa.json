@@ -1,7 +1,7 @@
 {
   "dataset_reader": {
     "class_name": "sq_reader",
-    "valid_size": 10,
+    "valid_size": 1000,
     "data_path": "{DOWNLOADS_PATH}/coqa/coqa_max_tok_{MAX_TOKENS}.json"
   },
   "dataset_iterator": {
@@ -34,7 +34,7 @@
         "learning_rate_drop_div": 1.5,
         "in": ["input_ids", "attention_mask"],
         "in_y": ["target_ids"],
-        "out": ["answer", "ppl"]
+        "out": ["answer"]
       }
     ],
     "out": ["answer"]
@@ -46,13 +46,9 @@
     ],
     "log_every_n_batches": 1,
     "val_every_n_batches": 500,
-    "batch_size": 5,
+    "batch_size": 10,
     "validation_patience": 100,
     "metrics": [
-      {
-        "name": "ppl",
-        "inputs": ["ppl"]
-      },
       {
         "name": "sacrebleu",
         "inputs": ["target", "answer"]

@@ -14,21 +14,19 @@ def gen_wandb_config(config_path):
     return config
 
 if __name__ == "__main__":
-    deeppavlov_config = configs.squad.natural_questions_fid
+    deeppavlov_config = configs.squad.nq_t5
     config_path = str(deeppavlov_config)
     config = gen_wandb_config(config_path)
 
     wandb.login()
     wandb.init(entity="logiczmaksimka",
-            project="Fusion-in-decoder",
-            group="FiD_01",
-            name="preprocessing_fix",
+            project="T5",
+            group="t5_test",
             job_type="train",
             config=config)
     
     wandb.watch_called = False
     wandb.save(config_path)
-    wandb.save(Path(__file__).absolute())
+    wandb.save(str(Path(__file__).absolute()))
 
-    model = train_model(deeppavlov_config, download=False)
-    # evaluate_model(deeppavlov_config, download=False)
+    print(train_model(deeppavlov_config, download=False))

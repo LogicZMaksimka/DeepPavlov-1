@@ -1,7 +1,7 @@
 {
   "dataset_reader": {
     "class_name": "sq_reader",
-    "valid_size": 1000,
+    "valid_size": 2,
     "data_path": "/archive/savkin/parsed_datasets/trivia_qa/trivia_qa_dataset_25_0.4_0.4_0.2.json"
   },
   "dataset_iterator": {

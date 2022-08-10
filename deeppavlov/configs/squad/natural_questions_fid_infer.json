@@ -20,7 +20,7 @@
         "out": ["answer"]
       }
     ],
-    "out": ["answer", "contexts"]
+    "out": ["answer"]
   },
   "metadata": {
     "variables": {
