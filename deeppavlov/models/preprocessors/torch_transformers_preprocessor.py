@@ -205,7 +205,7 @@ class TorchTransformersGenerativeQAPreprocessor(Component):
                 vocab_file, do_lower_case=do_lower_case)
         self.answer_maxlength = answer_maxlength
 
-    def __call__(self, questions_batch: List[str], passages_batch: List[List[str]], targets_batch: List[str] = None):       
+    def __call__(self, questions_batch: List[str], passages_batch: List[List[str]], targets_batch: List[str] = None):
         # Append question to all the contexts
         input_batch = ["question: " + question + " context: " +  " context: ".join(text_passages) 
                        for (question, text_passages) in zip(questions_batch, passages_batch)]

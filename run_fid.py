@@ -14,19 +14,26 @@ def gen_wandb_config(config_path):
     return config
 
 if __name__ == "__main__":
-    deeppavlov_config = configs.squad.nq_t5
+    deeppavlov_config = configs.odqa.en_odqa_bpr_fid
     config_path = str(deeppavlov_config)
     config = gen_wandb_config(config_path)
 
     wandb.login()
+    # wandb.init(entity="logiczmaksimka",
+    #            project="Fusion-in-decoder",
+    #            group="FiD_01",
+    #            name="train on contexts sorted by relevance",
+    #            job_type="train",
+    #            config=config)
     wandb.init(entity="logiczmaksimka",
-            project="T5",
-            group="t5_test",
-            job_type="train",
-            config=config)
+           project="Fusion-in-decoder",
+           group="FiD_test",
+           name="BPR+FiD no shuffling trivia eval",
+           job_type="eval",
+           config=config)
     
     wandb.watch_called = False
     wandb.save(config_path)
     wandb.save(str(Path(__file__).absolute()))
 
-    print(train_model(deeppavlov_config, download=False))
+    evaluate_model(deeppavlov_config, download=False)

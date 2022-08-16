@@ -1,16 +1,21 @@
 {
   "dataset_reader": {
     "class_name": "sq_reader",
-    "valid_size": 2,
-    "data_path": "/archive/savkin/parsed_datasets/trivia_qa/trivia_qa_dataset_25_0.4_0.4_0.2.json"
+    "valid_size": 1000,
+    "data_path": "/archive/savkin/parsed_datasets/natural_questions/nq_dataset_25_0.4_0.4_0.2_shuffle_False.json"
   },
   "dataset_iterator": {
     "class_name": "data_learning_iterator"
   },
   "chainer": {
-    "in": ["question", "contexts"],
+    "in": ["question", "_"],
     "in_y": ["target", "gold_answers"],
     "pipe": [
+      {
+        "config_path": "{CONFIGS_PATH}/doc_retrieval/bpr_en.json",
+        "in": ["question"],
+        "out": ["contexts"]
+      },
       {
         "class_name": "torch_transformers_fid_preprocessor",
         "vocab_file": "{TRANSFORMER}",
@@ -31,7 +36,7 @@
           "betas": [0.9, 0.999],
           "eps": 1e-08
         },
-        "learning_rate_drop_patience": 4,
+        "learning_rate_drop_patience": 8,
         "learning_rate_drop_div": 2,
         "min_learning_rate": 1e-5,
         "generate_max_length" : 20,
@@ -49,8 +54,8 @@
     ],
     "log_every_n_batches": 100,
     "val_every_n_batches": 600,
-    "batch_size": 5,
-    "validation_patience": 30,
+    "batch_size": 20,
+    "validation_patience": 60,
     "metrics": [
       {
         "name": "squad_v2_em",
@@ -63,10 +68,6 @@
       {
         "name": "sacrebleu",
         "inputs": ["gold_answers", "model_answer"]
-      },
-      {
-        "name": "kbqa_accuracy",
-        "inputs": ["gold_answers", "model_answer"]
       }
     ],
     "class_name": "torch_trainer"
@@ -77,7 +78,8 @@
       "ROOT_PATH": "~/.deeppavlov",
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
-      "MODEL_PATH": "{MODELS_PATH}/generative_qa/fid/natural_questions/"
+      "MODEL_PATH": "{MODELS_PATH}/generative_qa/fid/natural_questions/no_shuffling/",
+      "CONFIGS_PATH": "{DEEPPAVLOV_PATH}/configs"
     }
   }
 }

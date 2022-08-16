@@ -1,0 +1,40 @@
+{
+  "chainer": {
+    "in": ["question"],
+    "pipe": [
+      {
+          "config_path": "{CONFIGS_PATH}/doc_retrieval/bpr_en.json",
+          "in": ["question"],
+          "out": ["contexts"]
+      },
+      {
+        "class_name": "torch_transformers_fid_preprocessor",
+        "vocab_file": "{TRANSFORMER}",
+        "max_seq_length": 512,
+        "answer_maxlength" : 20,
+        "in": ["question", "contexts"],
+        "out": ["input_ids", "attention_mask"]
+      },
+      {
+        "class_name": "torch_generative_qa_fid",
+        "pretrained_transformer": "{TRANSFORMER}",
+        "save_path": "{MODEL_PATH}",
+        "load_path": "{MODEL_PATH}",
+        "generate_max_length" : 20,
+        "in": ["input_ids", "attention_mask"],
+        "out": ["model_answer"]
+      }
+    ],
+    "out": ["model_answer", "contexts"]
+  },
+  "metadata": {
+    "variables": {
+      "TRANSFORMER": "t5-base",
+      "ROOT_PATH": "~/.deeppavlov",
+      "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
+      "MODELS_PATH": "{ROOT_PATH}/models",
+      "MODEL_PATH": "{MODELS_PATH}/generative_qa/fid/natural_questions",
+      "CONFIGS_PATH": "{DEEPPAVLOV_PATH}/configs"
+    }
+  }
+}
