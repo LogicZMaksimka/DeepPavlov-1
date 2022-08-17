@@ -78,8 +78,22 @@
       "ROOT_PATH": "~/.deeppavlov",
       "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
       "MODELS_PATH": "{ROOT_PATH}/models",
-      "MODEL_PATH": "{MODELS_PATH}/generative_qa/fid/natural_questions/no_shuffling/",
+      "MODEL_PATH": "{MODELS_PATH}/generative_qa/fid/natural_questions",
       "CONFIGS_PATH": "{DEEPPAVLOV_PATH}/configs"
-    }
+    },
+    "download": [
+      {
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/generative_question_answering//en_kbqa_nq_fid/config.json",
+        "subdir": "{MODEL_PATH}"
+      },
+      {
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/generative_question_answering//en_kbqa_nq_fid/pytorch_model.bin",
+        "subdir": "{MODEL_PATH}"
+      },
+      {
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/generative_question_answering//en_kbqa_nq_fid/optimizer.pth.tar",
+        "subdir": "{MODEL_PATH}"
+      }
+    ]
   }
 }
