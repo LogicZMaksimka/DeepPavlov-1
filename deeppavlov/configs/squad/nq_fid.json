@@ -77,15 +77,15 @@
     },
     "download": [
       {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/generative_question_answering//en_kbqa_nq_fid/config.json",
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/kbqa/models/generative_qa/fusion_in_decoder/natural_questions/config.json",
         "subdir": "{MODEL_PATH}"
       },
       {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/generative_question_answering//en_kbqa_nq_fid/pytorch_model.bin",
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/kbqa/models/generative_qa/fusion_in_decoder/natural_questions/pytorch_model.bin",
         "subdir": "{MODEL_PATH}"
       },
       {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/generative_question_answering//en_kbqa_nq_fid/optimizer.pth.tar",
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/kbqa/models/generative_qa/fusion_in_decoder/natural_questions/optimizer.pth.tar",
         "subdir": "{MODEL_PATH}"
       }
     ]

@@ -83,15 +83,9 @@
     },
     "download": [
       {
-        "url": "http://files.deeppavlov.ai/deeppavlov_data/generative_question_answering//en_kbqa_nq_t5/model.pth.tar",
+        "url": "http://files.deeppavlov.ai/deeppavlov_data/kbqa/models/generative_qa/t5/natural_questions/model.pth.tar",
         "subdir": "{MODEL_PATH}"
       }
     ]
   }
 }
-
-
-
-
-
-
